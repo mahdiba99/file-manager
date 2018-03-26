@@ -1,35 +1,53 @@
 # -*- coding: utf-8 -*-
 
-# Form implementation generated from reading ui file 'first.ui'
+# Form implementation generated from reading ui file 'design.ui'
 #
 # Created by: PyQt5 UI code generator 5.10.1
 #
 # WARNING! All changes made in this file will be lost!
 
 from PyQt5 import QtCore, QtGui, QtWidgets
+from dialog import Ui_Dialog
 import os
 
-
 class Ui_MainWindow(object):
-    def openfile(self):
-        path = self.QLineEdit.text()
-        self.listView.model.setRootPath(path)
+    def browes(self):
+        address = self.lineEdit.text()
         try:
-            os.startfile(self.QLineEdit.text())
+            os.startfile(address)
         except:
-            print('how?')
-
+            self.raiseerror()
+    def raiseerror(self):
+        dialog = QtWidgets.QDialog()
+        ex = Ui_Dialog()
+        ex.setupUi(dialog)
+        dialog.show()
+        dialog.exec_()
+    def up(self):
+        self.pre = os.getcwd()
+        if os.getcwd()[-1] == '/':
+            s = os.getcwd[:-1]
+        else:
+            s = os.getcwd()
+        n = s.rfind('\\')
+        s=s[:n]+'\\'
+        os.chdir(s)#
+        self.lineEdit.setText(str(s))
+        self.browes()
+    def back(self):
+        os.chdir(self.pre)
+        self.lineEdit.setText(str(os.getcwd()))
+        self.browes()
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
         MainWindow.setWindowModality(QtCore.Qt.ApplicationModal)
-        MainWindow.resize(788, 641)
+        MainWindow.resize(788, 612)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/newPrefix/مدارک/picture-24048-1508053366.jpg"), QtGui.QIcon.Normal, QtGui.QIcon.On)
         MainWindow.setWindowIcon(icon)
         MainWindow.setAccessibleDescription("")
         MainWindow.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -46,13 +64,6 @@ class Ui_MainWindow(object):
         self.treeWidget.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
         self.treeWidget.setObjectName("treeWidget")
         self.treeWidget.headerItem().setText(0, "1")
-        self.listView = QtWidgets.QListView(self.centralwidget)
-        self.listView.setGeometry(QtCore.QRect(140, 80, 511, 501))
-        self.listView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
-        self.listView.setObjectName("listView")
-        self.listView.model = QtWidgets.QFileSystemModel()
-        self.listView.model.setRootPath('')
-        self.listView.setModel(self.listView.model)
         self.label_2 = QtWidgets.QLabel(self.centralwidget)
         self.label_2.setGeometry(QtCore.QRect(660, 50, 121, 31))
         font = QtGui.QFont()
@@ -72,6 +83,7 @@ class Ui_MainWindow(object):
         self.pushButton.setIcon(icon1)
         self.pushButton.setFlat(True)
         self.pushButton.setObjectName("pushButton")
+        self.pushButton.clicked.connect(self.up)
         self.pushButton_2 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_2.setGeometry(QtCore.QRect(90, 10, 41, 28))
         self.pushButton_2.setText("")
@@ -80,6 +92,7 @@ class Ui_MainWindow(object):
         self.pushButton_2.setIcon(icon2)
         self.pushButton_2.setFlat(True)
         self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.clicked.connect(self.back)
         self.label = QtWidgets.QLabel(self.centralwidget)
         self.label.setGeometry(QtCore.QRect(10, 50, 121, 31))
         font = QtGui.QFont()
@@ -91,15 +104,6 @@ class Ui_MainWindow(object):
         self.label.setWordWrap(False)
         self.label.setTextInteractionFlags(QtCore.Qt.TextBrowserInteraction)
         self.label.setObjectName("label")
-        self.QLineEdit = QtWidgets.QLineEdit(self.centralwidget)
-        self.QLineEdit.setEnabled(True)
-        self.QLineEdit.setGeometry(QtCore.QRect(140, 10, 511, 31))
-        font = QtGui.QFont()
-        font.setFamily("CC Adamantium")
-        font.setPointSize(10)
-        self.QLineEdit.setFont(font)
-        self.QLineEdit.setInputMethodHints(QtCore.Qt.ImhUrlCharactersOnly)
-        self.QLineEdit.setObjectName("QLineEdit")
         self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(660, 10, 121, 31))
         font = QtGui.QFont()
@@ -108,46 +112,32 @@ class Ui_MainWindow(object):
         self.pushButton_3.setFont(font)
         self.pushButton_3.setFlat(True)
         self.pushButton_3.setObjectName("pushButton_3")
-        self.pushButton_3.clicked.connect(self.openfile)
+        self.pushButton_3.clicked.connect(self.browes)
         self.graphicsView = QtWidgets.QGraphicsView(self.centralwidget)
         self.graphicsView.setGeometry(QtCore.QRect(660, 81, 121, 501))
         self.graphicsView.setObjectName("graphicsView")
-        self.pushButton.raise_()
-        self.pushButton_2.raise_()
-        self.QLineEdit.raise_()
-        self.listView.raise_()
-        self.treeWidget.raise_()
-        self.label.raise_()
-        self.label_2.raise_()
-        self.treeWidget.raise_()
-        self.listView.raise_()
-        self.label_2.raise_()
-        self.pushButton.raise_()
-        self.pushButton_2.raise_()
-        self.label.raise_()
-        self.QLineEdit.raise_()
-        self.pushButton_3.raise_()
-        self.graphicsView.raise_()
+        self.lineEdit = QtWidgets.QLineEdit(self.centralwidget)
+        self.lineEdit.setGeometry(QtCore.QRect(140, 10, 511, 31))
+        self.lineEdit.setObjectName("lineEdit")
+        self.tableView = QtWidgets.QTableView(self.centralwidget)
+        self.tableView.setGeometry(QtCore.QRect(140, 80, 511, 501))
+        self.tableView.setObjectName("tableView")
         MainWindow.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(MainWindow)
         self.statusbar.setObjectName("statusbar")
         MainWindow.setStatusBar(self.statusbar)
-        self.menuBar = QtWidgets.QMenuBar(MainWindow)
-        self.menuBar.setGeometry(QtCore.QRect(0, 0, 788, 26))
-        self.menuBar.setObjectName("menuBar")
-        MainWindow.setMenuBar(self.menuBar)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "File Mnager"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "File Manager"))
         self.label_2.setText(_translate("MainWindow", "Preview"))
         self.label.setText(_translate("MainWindow", "Tree view"))
-        self.pushButton_3.setText(_translate("MainWindow", "Go"))
+        self.pushButton_3.setText(_translate("MainWindow", "browes"))
 
-
+import icon_rc
 if __name__ == "__main__":
     import sys
     app = QtWidgets.QApplication(sys.argv)
@@ -156,4 +146,3 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
-

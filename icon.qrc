@@ -1,0 +1,10 @@
+<RCC>
+  <qresource prefix="newPrefix">
+    <file>icons/file.png</file>
+    <file>icons/file2.png</file>
+    <file>icons/folder.png</file>
+    <file>icons/left2.png</file>
+    <file>icons/rightpng.png</file>
+    <file>icons/warning_exclamation.png</file>
+  </qresource>
+</RCC>
