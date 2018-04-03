@@ -1,9 +1,11 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
-import os,time,shutil
+import os, time, shutil
 from dialog import Ui_Dialog
 from Item import Item
-from transfer import copy as fcopy ,cut as fcut
+
 global addr
+
+
 class TableWidget(QtWidgets.QTableWidget):
     def __init__(self, parent=None):
         super(TableWidget, self).__init__(parent)
@@ -11,14 +13,17 @@ class TableWidget(QtWidgets.QTableWidget):
         self.fileIcon = QtGui.QIcon(QtGui.QPixmap("icons/file.png"))
         self.folderIcon = QtGui.QIcon(QtGui.QPixmap("icons/folder.png"))
         global addr
-    def getItems(self,path):
+
+    def getItems(self, path):
         os.chdir(path)
         itemlist = os.listdir()
         items = []
-        for item in  itemlist:
-            tmp_item = Item(item,os.path.getsize(path + '/' + item) , time.ctime(os.path.getmtime(path + '/' + item)),path )
+        for item in itemlist:
+            tmp_item = Item(item, os.path.getsize(path + '/' + item), time.ctime(os.path.getmtime(path + '/' + item)),
+                            path)
             items.append(tmp_item)
         return items
+
     def set_table(self):
         items = self.getItems(addr)
         if len(items) != 0:
@@ -28,85 +33,112 @@ class TableWidget(QtWidgets.QTableWidget):
                 self.setHorizontalHeaderLabels(("Name", "Date Modified", "Size"))
                 self.autoFillBackground()
                 icon3 = self.fileIcon
-                if os.path.isdir(items[i].path+"/"+items[i].name):
+                if os.path.isdir(items[i].path + "/" + items[i].name):
                     icon3 = self.folderIcon
-                self.setItem(i, 0, QtWidgets.QTableWidgetItem(icon3,items[i].name))
-                self.setItem(i,1 , QtWidgets.QTableWidgetItem(items[i].date))
+                self.setItem(i, 0, QtWidgets.QTableWidgetItem(icon3, items[i].name))
+                self.setItem(i, 1, QtWidgets.QTableWidgetItem(items[i].date))
                 if icon3 == self.folderIcon:
-                    self.setItem(i,2,QtWidgets.QTableWidgetItem("--"))
+                    self.setItem(i, 2, QtWidgets.QTableWidgetItem("--"))
                 else:
                     if items[i].size // 1000000000 != 0:
-                        size = str(round(items[i].size/1000000000,2)) + " GB"
+                        size = str(round(items[i].size / 1000000000, 2)) + " GB"
                     elif items[i].size // 1000000 != 0:
-                        size = str(round(items[i].size/1000000,2)) + " MB"
+                        size = str(round(items[i].size / 1000000, 2)) + " MB"
                     elif items[i].size // 1000 != 0:
-                        size = str(round(items[i].size /1000,2)) + " KB"
-                    else :
+                        size = str(round(items[i].size / 1000, 2)) + " KB"
+                    else:
                         size = str(items[i].size) + " B"
-                    self.setItem(i,2,QtWidgets.QTableWidgetItem(size))
+                    self.setItem(i, 2, QtWidgets.QTableWidgetItem(size))
             self.resizeColumnsToContents()
         else:
             self.setRowCount(len(items))
             self.setColumnCount(3)
             self.setHorizontalHeaderLabels(("Name", "Date Modified", "Size"))
             self.autoFillBackground()
+
     def contextMenuEvent(self, event):
         menu = QtWidgets.QMenu(self)
         CopyAction = menu.addAction("Copy")
         CutAction = menu.addAction("Cut")
-        delAction= menu.addAction("Delete")
-        newAction= menu.addAction("NewFolder")
+        delAction = menu.addAction("Delete")
+        newAction = menu.addAction("NewFolder")
         pasteAction = menu.addAction("Paste")
         action = menu.exec_(self.mapToGlobal(event.pos()))
-        if action == delAction :
-            remove_path = addr+'/'+str(self.item(self.currentRow(),self.currentColumn()).text())
-            delete(remove_path,None,self)
+        if action == delAction:
+            remove_path = addr + '/' + str(self.item(self.currentRow(), self.currentColumn()).text())
+            delete(remove_path, None, self)
         if action == CopyAction:
-            self.clipboard = [addr.replace('\\','/',-1)+'/'+str(self.item(self.currentRow(),self.currentColumn()).text()),False]
+            self.clipboard = [
+                addr.replace('\\', '/', -1) + '/' + str(self.item(self.currentRow(), self.currentColumn()).text()),
+                False]
         if action == CutAction:
-            self.clipboard = [addr.replace('\\','/',-1)+'/'+str(self.item(self.currentRow(),self.currentColumn()).text()),True]
+            self.clipboard = [
+                addr.replace('\\', '/', -1) + '/' + str(self.item(self.currentRow(), self.currentColumn()).text()),
+                True]
         if action == newAction:
-            newfolder(addr,None,self)
+            newfolder(addr, None, self)
         if action == pasteAction:
-            if self.clipboard == 'Nothing yet':
-                pass
+            paste(self)
+def paste(table):
+    if table.clipboard == 'Nothing yet':
+        pass
+    else:
+        if table.clipboard[1] == True:
+            copy(table.clipboard[0], addr, table)
+            delete(table.clipboard[0], None, table)
+            table.clipboard = 'Nothing yet'
+
+        else:
+            copy(table.clipboard[0], addr, table)
+
+
+def copy(source, destination, table=None):
+    destination += source[::-1][:source[::-1].find("/") + 1][::-1]
+    try:
+        if not os.path.exists(destination):
+            if os.path.isdir(source):
+                shutil.copytree(source, destination)
             else:
-                if self.clipboard[1] == True:
-                    copy(self.clipboard[0],addr,self)
-                    delete(self.clipboard[0], None, self)
-                    self.clipboard = 'Nothing yet'
-
-                else:
-                    copy(self.clipboard[0],addr,self)
-
-def copy(source,destination,table = None):
-    destination += source[::-1][:source[::-1].find("/")+1][::-1]
-    if os.path.isdir(source):
-        shutil.copytree(source,destination)
-    else:
-        shutil.copyfile(source,destination)
-    table.set_table()
+                shutil.copyfile(source, destination)
+            table.set_table()
+        else:
+            destination += '(copy)'
+            if os.path.isdir(source):
+                shutil.copytree(source, destination)
+            else:
+                shutil.copyfile(source, destination)
+            table.set_table()
+    except :
+        pass
 
 
-def delete(address,ui = None,table = None):
-    address = address.replace('\\','/',-1)
-    if os.path.isdir(address):
-        shutil.rmtree(address)
-    else:
-        os.remove(address)
+def delete(address, ui=None, table=None):
     try:
-        ui.TableWidget.set_table()
-    except:
-        table.set_table()
-def newfolder(address,ui = None,table = None):
-    try:
-        os.makedirs(address+"/"+"NewFolder")
+        address = address.replace('\\', '/', -1)
+        if os.path.isdir(address):
+            shutil.rmtree(address)
+        else:
+            os.remove(address)
+        try:
+            ui.TableWidget.set_table()
+        except:
+            table.set_table()
     except:
         pass
+
+
+def newfolder(address, ui=None, table=None):
     try:
-        ui.TableWidget.set_table()
+        try:
+            os.makedirs(address + "/" + "NewFolder")
+        except:
+            pass
+        try:
+            ui.TableWidget.set_table()
+        except:
+            table.set_table()
     except:
-        table.set_table()
+        pass
 
 
 class Ui_MainWindow():
@@ -136,7 +168,8 @@ class Ui_MainWindow():
         sizePolicy.setHeightForWidth(MainWindow.sizePolicy().hasHeightForWidth())
         MainWindow.setSizePolicy(sizePolicy)
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(":/newPrefix/مدارک/picture-24048-1508053366.jpg"), QtGui.QIcon.Normal, QtGui.QIcon.On)
+        icon.addPixmap(QtGui.QPixmap(":/newPrefix/مدارک/picture-24048-1508053366.jpg"), QtGui.QIcon.Normal,
+                       QtGui.QIcon.On)
         MainWindow.setWindowIcon(icon)
         MainWindow.setAccessibleDescription("")
         MainWindow.setLayoutDirection(QtCore.Qt.LeftToRight)
@@ -155,7 +188,6 @@ class Ui_MainWindow():
         ##################################TReee View###################################################
         self.fileSystemModel = QtWidgets.QFileSystemModel(self.TreeView)
         self.fileSystemModel.setReadOnly(False)
-
 
         Layout = QtWidgets.QVBoxLayout()
         Layout.addWidget(self.TreeView)
@@ -214,7 +246,6 @@ class Ui_MainWindow():
         self.TableWidget.doubleClicked.connect(self.doubleClicked)
         self.TableWidget.clicked.connect(self.itemclicked)
 
-
         ####################tableview###################################
         self.fileSystemModel = QtWidgets.QFileSystemModel(self.TableWidget)
         self.fileSystemModel.setReadOnly(False)
@@ -236,7 +267,7 @@ class Ui_MainWindow():
         self.deletebutton.setIconSize(QtCore.QSize(30, 30))
         self.deletebutton.setFlat(True)
         self.deletebutton.setObjectName("deletebutton")
-        self.deletebutton.clicked.connect(lambda:delete(self.itemlocation,self))
+        self.deletebutton.clicked.connect(lambda: delete(self.itemlocation, self))
         self.newbutton = QtWidgets.QPushButton(self.centralwidget)
         self.newbutton.setGeometry(QtCore.QRect(410, 590, 93, 28))
         self.newbutton.setText("")
@@ -257,7 +288,7 @@ class Ui_MainWindow():
         self.copybutton.setFlat(True)
         self.copybutton.setObjectName("copybutton")
         ###################################################################
-        self.copybutton.clicked.connect(lambda :self.clipboard(str(self.itemlocation), False))
+        self.copybutton.clicked.connect(lambda: self.clipboard(str(self.itemlocation), False))
         self.cutbutton = QtWidgets.QPushButton(self.centralwidget)
         self.cutbutton.setGeometry(QtCore.QRect(620, 590, 93, 28))
         self.cutbutton.setText("")
@@ -267,33 +298,31 @@ class Ui_MainWindow():
         self.cutbutton.setIconSize(QtCore.QSize(30, 30))
         self.cutbutton.setFlat(True)
         self.cutbutton.setObjectName("cutbutton")
-        self.cutbutton.clicked.connect(lambda :self.clipboard(str(self.itemlocation), True))
+        self.cutbutton.clicked.connect(lambda: self.clipboard(str(self.itemlocation), True))
         MainWindow.setStatusBar(self.statusbar)
 
         self.retranslateUi(MainWindow)
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
-    def itemclicked(self,item):
-        if item.column() == 0:
-            self.itemlocation = addr+'\\'+str(item.data())
 
-    def doubleClicked(self,item):
+    def itemclicked(self, item):
+        if item.column() == 0:
+            self.itemlocation = addr + '\\' + str(item.data())
+
+    def doubleClicked(self, item):
         global addr
         if item.column() == 0:
-                if os.path.isdir(addr + "\\" + str(item.data())):
-                    addr += "\\" + str(item.data())
-                    self.lineEdit.setText(addr)
-                    self.browes()
-                else:
-                    preaddr = addr
-                    addr += "/" + str(item.data())
-                    self.lineEdit.setText(addr)
-                    self.browes()
+            if os.path.isdir(addr + "\\" + str(item.data())):
+                addr += "\\" + str(item.data())
+                self.lineEdit.setText(addr)
+                self.browes()
+            else:
+                preaddr = addr
+                addr += "/" + str(item.data())
+                self.lineEdit.setText(addr)
+                self.browes()
 
-                    addr = preaddr
-                    self.lineEdit.setText(addr)
-
-
-
+                addr = preaddr
+                self.lineEdit.setText(addr)
 
     def browes(self):
         global addr
@@ -317,6 +346,7 @@ class Ui_MainWindow():
         ex.setupUi(dialog)
         dialog.show()
         dialog.exec_()
+
     def up(self):
         global addr
         self.pre = os.getcwd()
@@ -325,26 +355,27 @@ class Ui_MainWindow():
         else:
             s = os.getcwd()
         n = s.rfind('\\')
-        s=s[:n]+'\\'
-        os.chdir(s)#
+        s = s[:n] + '\\'
+        os.chdir(s)  #
         addr = str(s)
         self.lineEdit.setText(str(s))
         self.browes()
+
     def back(self):
         global addr
         os.chdir(self.pre)
         addr = str(os.getcwd())
         self.lineEdit.setText(addr)
         self.browes()
+
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "File Mnager"))
         self.label.setText(_translate("MainWindow", "Tree view"))
         self.pushButton_3.setText(_translate("MainWindow", "browes"))
 
-    def clipboard(self,path,bul):
-            self.TableWidget.clipboard = [path.replace('\\','/',-1),bul]
-
+    def clipboard(self, path, bul):
+        self.TableWidget.clipboard = [path.replace('\\', '/', -1), bul]
 
 
 import icons
@@ -353,6 +384,7 @@ if __name__ == "__main__":
     global addr
     addr = os.getcwd()
     import sys
+
     app = QtWidgets.QApplication(sys.argv)
     ui = Ui_MainWindow()
     sys.exit(app.exec_())
