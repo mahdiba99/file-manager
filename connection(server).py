@@ -21,9 +21,17 @@ def listen(conn):
             print('recieved: ',req)
             if req[:5] == 'getI ':
                 path = req[5:]
-                l = os.listdir(path)
-                if path[-1] != '/':
-                    path += '/'
+                if path == '':
+                    l=[]
+                    b = 'abcdefghijklmnopqrstuvwxyz'
+                    for i in b:
+                        print(i)
+                        if os.path.exists(i+':/'):
+                            l.append(i+':/')
+                else:
+                    l = os.listdir(path)
+                    if path[-1] != '/':
+                        path += '/'
                 from Item import Item
                 import time
                 il = []
