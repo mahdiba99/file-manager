@@ -321,7 +321,7 @@ class Ui_MainWindow():
         self.cutbutton.setObjectName("cutbutton")
         self.cutbutton.clicked.connect(lambda: self.clipboard(str(self.itemlocation), True))
         self.downbutton = QtWidgets.QPushButton(self.centralwidget)
-        self.downbutton.setGeometry(QtCore.QRect(680, 590, 93, 28))
+        self.downbutton.setGeometry(QtCore.QRect(670, 590, 93, 28))
         font = QtGui.QFont()
         font.setFamily("Titr")
         font.setPointSize(10)
@@ -388,46 +388,30 @@ class Ui_MainWindow():
             elif addr == None:
 
                 if str(item.data()) == 'This PC':
-                    global recs
                     addr = ''
                     self.browse()
                 elif str(item.data()) == 'Other PC':
+                    global recs
                     try:
                         print('try')
                         print(recs)
                     except:
                         print('server up and running')
                         
-                        recs = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
                         reqs = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-
-                        recs.bind(('localhost',5000))
-                        recs.listen(5)
-                        reccon,recaddr = recs.accept()
+                        reqs.connect(('localhost',5000))
 
 
-                        reqs.bind(('localhost',6000))
-                        reqs.listen(5)
-                        reqcon,reqaddr = reqs.accept()
-                        import req
-                        dialog = QtWidgets.QDialog()
-                        dialog.ui = req.Ui_Dialog()
-                        dialog.ui.setupUi(dialog)
-                        result = dialog.exec_()
-                        dialog.show()
+                        recs = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+                        recs.connect(('localhost',6000))
 
-                        if result == dialog.Accepted:
-                            print('connected')
-                            pass
-                        elif result == dialog.Rejected:
-                            reccon.send('close'.encode())
-                            reccon.close()
-                            reqcon.close()
-                            print('connection closed')
+
+                        print('connected')
 
                         def listen(conn):
                             while conn:
                                 try:
+                                    
                                     req = conn.recv(1024).decode('utf-8')
                                     print('recieved: ',req)
                                     if req[:5] == 'getI ':
@@ -467,16 +451,17 @@ class Ui_MainWindow():
                                         conn.send(file.read())
                                         conn.send(bytes('EOF','utf-8'))
                                         file.close()
+                                    elif req == 'close':
+                                        conn.close()
                                 except:
                                     pass
                         try:
-                            tl = threading.Thread(target = listen,args=(reccon,))
+                            tl = threading.Thread(target = listen,args=(recs,))
                             tl.start()
                         except:
                             pass
-
                         global ogetitems,odelete,getfile
-                        def ogetitems(path,conn = reqcon):
+                        def ogetitems(path,conn = reqs):
                             print('sg')
                             path = path.replace('//','/',-1)
                             #print(path)
@@ -492,7 +477,7 @@ class Ui_MainWindow():
                             #print(itemslist)  
                             return itemslist
 
-                        def odelete(path,conn = reqcon):
+                        def odelete(path,conn = reqs):
                             conn.send(bytes('del '+path,'utf-8'))
                             return conn.recv(4096).decode('utf-8')
 
@@ -514,7 +499,6 @@ class Ui_MainWindow():
                                     file.seek(0,2)
                                     file.write(b)
                             file.close()
-
 
                     addr = 'other '
                     self.browse()
@@ -582,7 +566,7 @@ class Ui_MainWindow():
             self.pre = 'other '
             addr = None
             self.browse()
-        elif addr:
+        if addr:
             if addr[-1] != '/':
                 addr += '/'
             if addr.count('/')+addr.count('\\') <2:
