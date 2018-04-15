@@ -99,16 +99,19 @@ class TableWidget(QtWidgets.QTableWidget):
         if action == pasteAction:
             paste(self)
 def paste(table):
-    if table.clipboard == 'Nothing yet':
-        pass
-    else:
-        if table.clipboard[1] == True:
-            copy(table.clipboard[0], addr, table)
-            delete(table.clipboard[0], None, table)
-            table.clipboard = 'Nothing yet'
-
+    try:
+        if table.clipboard == 'Nothing yet':
+            pass
         else:
-            copy(table.clipboard[0], addr, table)
+            if table.clipboard[1] == True:
+                copy(table.clipboard[0], addr, table)
+                delete(table.clipboard[0], None, table)
+                table.clipboard = 'Nothing yet'
+
+            else:
+                copy(table.clipboard[0], addr, table)
+    except:
+        pass
 
 
 def copy(source, destination, table=None):
@@ -119,17 +122,18 @@ def copy(source, destination, table=None):
                 shutil.copytree(source, destination)
             else:
                 shutil.copyfile(source, destination)
-            table.set_table(table.getItems(addr))
         else:
             destination += '(copy)'
             if os.path.isdir(source):
                 shutil.copytree(source, destination)
             else:
                 shutil.copyfile(source, destination)
-            table.set_table(table.getItems(addr))
     except :
         pass
-
+    try:
+        table.set_table(table.getItems(addr))
+    except:
+        pass
 
 def delete(address, ui=None, table=None):
     try:
@@ -138,16 +142,19 @@ def delete(address, ui=None, table=None):
             shutil.rmtree(address)
         else:
             os.remove(address)
-        try:
-            ui.TableWidget.set_table(ui.TableWidget.getItems(addr))
-        except:
-            table.set_table(table.getItems(addr))
+
     except:
         pass
+    try:
+        ui.TableWidget.set_table(ui.TableWidget.getItems(addr))
+    except:
+        try:
+            table.set_table(table.getItems(addr))
+        except:
+            pass
 
 
 def newfolder(address, ui=None, table=None):
-    try:
         try:
             os.makedirs(address + "/" + "NewFolder")
         except:
@@ -155,12 +162,16 @@ def newfolder(address, ui=None, table=None):
         try:
             ui.TableWidget.set_table(ui.TableWidget.getItems(addr))
         except:
-            table.set_table(table.getItems(addr))
+            try:
+                table.set_table(table.getItems(addr))
+            except:
+                pass
+def tgetfile(opath,loc):
+    try:
+        tg = threading.Thread(target = getfile , args = (opath,loc))
+        tg.start()
     except:
         pass
-def tgetfile(opath,loc):
-    tg = threading.Thread(target = getfile , args = (opath,loc))
-    tg.start()
 
 class Ui_MainWindow():
     def __init__(self):
@@ -335,7 +346,7 @@ class Ui_MainWindow():
         self.downbutton.setIconSize(QtCore.QSize(30, 30))
         self.downbutton.setFlat(True)
         self.downbutton.setObjectName("downbutton")
-        self.downbutton.clicked.connect(lambda:tgetfile(str(self.itemlocation),'D:/Arash/newfiles'))
+        self.downbutton.clicked.connect(lambda:tgetfile(str(self.itemlocation),'c:/downloads'))
         
         MainWindow.setStatusBar(self.statusbar)
 
@@ -396,19 +407,10 @@ class Ui_MainWindow():
                         print('try')
                         print(recs)
                     except:
-                        print('server up and running')
-                        
-                        recs = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-                        reqs = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-
-                        recs.bind(('localhost',5000))
-                        recs.listen(5)
-                        reccon,recaddr = recs.accept()
 
 
-                        reqs.bind(('localhost',6000))
-                        reqs.listen(5)
-                        reqcon,reqaddr = reqs.accept()
+
+
                         import req
                         dialog = QtWidgets.QDialog()
                         dialog.ui = req.Ui_Dialog()
@@ -418,106 +420,120 @@ class Ui_MainWindow():
 
                         if result == dialog.Accepted:
                             print('connected')
-                            pass
+                            print('server up and running')
+
+                            recs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                            reqs = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+                            recs.bind(('localhost', 5000))
+                            recs.listen(5)
+                            reccon, recaddr = recs.accept()
+                            reqs.bind(('localhost', 6000))
+                            reqs.listen(5)
+                            reqcon, reqaddr = reqs.accept()
+
+                            def listen(conn):
+                                while conn:
+                                    try:
+                                        req = conn.recv(1024).decode('utf-8')
+                                        print('recieved: ', req)
+                                        if req[:5] == 'getI ':
+                                            if req == 'getI ':
+                                                path = ''
+                                                l = []
+                                                b = 'abcdefghijklmnopqrstuvwxyz'
+                                                for i in b:
+                                                    if os.path.exists(i + ':/'):
+                                                        l.append(i + ':/')
+                                            else:
+                                                path = req[5:]
+                                                l = os.listdir(path)
+                                                if path[-1] != '/':
+                                                    path += '/'
+                                            from Item import Item
+                                            import time
+                                            il = []
+                                            for i in l:
+                                                il.append(Item(i, os.path.getsize(path + i), os.path.getmtime(path + i),
+                                                               path))
+                                            ilstr = ''
+                                            for i in il:
+                                                ilstr += str(i.name) + ',' + str(i.size) + ',' + str(
+                                                    i.date) + ',' + str(i.path) + '|||'
+                                            conn.send(bytes(ilstr, 'utf-8'))
+                                        elif req[:4] == 'del':
+                                            path = req[4:]
+                                            try:
+
+                                                delete(path)
+                                                conn.send(b'success')
+                                            except:
+                                                conn.send(b'failed')
+                                        elif req[:7] == 'giveme ':
+                                            path = req[7:]
+                                            file = open(path, 'rb')
+                                            file.seek(0)
+                                            conn.send(file.read())
+                                            conn.send(bytes('EOF', 'utf-8'))
+                                            file.close()
+
+                                    except:
+                                        pass
+
+                            try:
+                                tl = threading.Thread(target=listen, args=(reccon,))
+                                tl.start()
+                            except:
+                                pass
+
+                            global ogetitems, odelete, getfile
+
+                            def ogetitems(path, conn=reqcon):
+                                print('sg')
+                                path = path.replace('//', '/', -1)
+                                # print(path)
+                                conn.send(bytes('getI ' + path, 'utf-8'))
+                                ilstr = conn.recv(4096).decode('utf-8').split('|||')
+                                # print(ilstr)
+                                itemslist = []
+                                for i in ilstr:
+                                    if ',' in i:
+                                        istr = i.split(',')
+                                        # print(istr)
+                                        itemslist.append(
+                                            Item(istr[0], float(istr[1]), time.ctime(float(istr[2])), istr[3]))
+                                # print(itemslist)
+                                return itemslist
+
+                            def odelete(path, conn=reqcon):
+                                conn.send(bytes('del ' + path, 'utf-8'))
+                                return conn.recv(4096).decode('utf-8')
+
+                            def getfile(opath, loc, conn=reqs):
+                                opath.replace('\\', '/', -1)
+                                opath.replace('//', '/', -1)
+                                loc.replace('\\', '/', -1)
+                                loc.replace('//', '/', -1)
+                                if loc[-1] != '/':
+                                    loc += '/'
+                                file = open(loc + opath[opath.rfind('/') + 1:], 'wb')
+                                conn.send(bytes('giveme ' + opath[6:], 'utf-8'))
+                                while True:
+                                    b = conn.recv(2 ** 32)
+                                    try:
+                                        if b.decode('utf-8') == 'EOF':
+                                            break
+                                    except:
+                                        file.seek(0, 2)
+                                        file.write(b)
+                                file.close()
+
+                            addr = 'other '
+                            self.browse()
                         elif result == dialog.Rejected:
-                            reccon.send('close'.encode())
-                            reccon.close()
-                            reqcon.close()
-                            print('connection closed')
-
-                        def listen(conn):
-                            while conn:
-                                try:
-                                    req = conn.recv(1024).decode('utf-8')
-                                    print('recieved: ',req)
-                                    if req[:5] == 'getI ':
-                                        if req == 'getI ':
-                                            path = ''
-                                            l=[]
-                                            b = 'abcdefghijklmnopqrstuvwxyz'
-                                            for i in b:
-                                                if os.path.exists(i+':/'):
-                                                    l.append(i+':/')
-                                        else:
-                                            path = req[5:]                    
-                                            l = os.listdir(path)
-                                            if path[-1] != '/':
-                                                path += '/'
-                                        from Item import Item
-                                        import time
-                                        il = []
-                                        for i in l:
-                                            il.append(Item(i,os.path.getsize(path+i),os.path.getmtime(path+i),path))
-                                        ilstr = ''
-                                        for i in il:
-                                            ilstr += str(i.name) + ',' + str(i.size) + ',' + str(i.date) + ',' + str(i.path) + '|||'
-                                        conn.send(bytes(ilstr,'utf-8'))
-                                    elif req[:4] == 'del':
-                                        path = req[4:]
-                                        try:
-                                            
-                                            delete(path)
-                                            conn.send(b'success')
-                                        except:
-                                            conn.send(b'failed')
-                                    elif req[:7] == 'giveme ':
-                                        path = req[7:]
-                                        file = open(path,'rb')
-                                        file.seek(0)
-                                        conn.send(file.read())
-                                        conn.send(bytes('EOF','utf-8'))
-                                        file.close()
-                                except:
-                                    pass
-                        try:
-                            tl = threading.Thread(target = listen,args=(reccon,))
-                            tl.start()
-                        except:
                             pass
 
-                        global ogetitems,odelete,getfile
-                        def ogetitems(path,conn = reqcon):
-                            print('sg')
-                            path = path.replace('//','/',-1)
-                            #print(path)
-                            conn.send(bytes('getI '+path,'utf-8'))
-                            ilstr = conn.recv(4096).decode('utf-8').split('|||')
-                            #print(ilstr)
-                            itemslist = []
-                            for i in ilstr:
-                                if ',' in i:
-                                    istr = i.split(',')
-                                    #print(istr)
-                                    itemslist.append(Item(istr[0],float(istr[1]),time.ctime(float(istr[2])),istr[3]))
-                            #print(itemslist)  
-                            return itemslist
 
-                        def odelete(path,conn = reqcon):
-                            conn.send(bytes('del '+path,'utf-8'))
-                            return conn.recv(4096).decode('utf-8')
-
-                        def getfile(opath,loc,conn = reqs):
-                            opath.replace('\\','/',-1)
-                            opath.replace('//','/',-1)
-                            loc.replace('\\','/',-1)
-                            loc.replace('//','/',-1)
-                            if loc[-1] != '/':
-                                loc += '/'
-                            file = open(loc+opath[opath.rfind('/')+1:],'wb')
-                            conn.send(bytes('giveme '+opath[6:],'utf-8'))
-                            while True:
-                                b = conn.recv(2**32)
-                                try:
-                                    if b.decode('utf-8') == 'EOF':
-                                        break
-                                except:
-                                    file.seek(0,2)
-                                    file.write(b)
-                            file.close()
-
-
-                    addr = 'other '
-                    self.browse()
 
 
 
